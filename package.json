@@ -1,7 +1,4 @@
 {
   "name": "internal-asset-tracker",
-  "private": true,
-  "scripts": {
-    "start": "cd backend && npm install && npm start"
-  }
+  "private": true
 }

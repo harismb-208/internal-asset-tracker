@@ -13,6 +13,7 @@ export default function AdminDashboard() {
     // add-asset form
     const [newName, setNewName] = useState('');
     const [newType, setNewType] = useState('');
+    const [newQuantity, setNewQuantity] = useState(1);
 
     const [loading, setLoading] = useState(true);
     const [actionLoading, setActionLoading] = useState(null);
@@ -49,10 +50,15 @@ export default function AdminDashboard() {
         setAddLoading(true);
         setMsg({ text: '', type: '' });
         try {
-            await API.post('/assets', { name: newName.trim(), type: newType.trim() });
+            await API.post('/assets', { 
+                name: newName.trim(), 
+                type: newType.trim(), 
+                totalQuantity: parseInt(newQuantity) 
+            });
             setMsg({ text: 'Asset created successfully!', type: 'success' });
             setNewName('');
             setNewType('');
+            setNewQuantity(1);
             fetchAssets();
         } catch (err) {
             setMsg({ text: err.response?.data?.message || 'Failed to create asset', type: 'error' });
@@ -129,16 +135,16 @@ export default function AdminDashboard() {
             {/* ── stats row ── */}
             <div className="stats-row">
                 <div className="stat-card">
-                    <span className="stat-value">{assets.length}</span>
-                    <span className="stat-label">Total Assets</span>
+                    <span className="stat-value">{assets.reduce((acc, curr) => acc + (curr.totalQuantity || 0), 0)}</span>
+                    <span className="stat-label">Total Asset Units</span>
                 </div>
                 <div className="stat-card">
-                    <span className="stat-value">{assets.filter(a => a.status === 'AVAILABLE').length}</span>
-                    <span className="stat-label">Available</span>
+                    <span className="stat-value">{assets.reduce((acc, curr) => acc + (curr.availableQuantity || 0), 0)}</span>
+                    <span className="stat-label">Units Available</span>
                 </div>
                 <div className="stat-card">
-                    <span className="stat-value">{assets.filter(a => a.status === 'ASSIGNED').length}</span>
-                    <span className="stat-label">Assigned</span>
+                    <span className="stat-value">{assets.reduce((acc, curr) => acc + (curr.assignedQuantity || 0), 0)}</span>
+                    <span className="stat-label">Units Assigned</span>
                 </div>
                 <div className="stat-card">
                     <span className="stat-value">{requests.filter(r => r.status === 'PENDING').length}</span>
@@ -176,7 +182,7 @@ export default function AdminDashboard() {
                                             <th>Name</th>
                                             <th>Type</th>
                                             <th>Status</th>
-                                            <th>Assigned To</th>
+                                            <th>Inventory (Total/Avail/Assigned)</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -196,7 +202,13 @@ export default function AdminDashboard() {
                                                 <td>{asset.name}</td>
                                                 <td>{asset.type}</td>
                                                 <td>{statusBadge(asset.status)}</td>
-                                                <td>{asset.assignedTo ? `${asset.assignedTo.name} (${asset.assignedTo.email})` : '—'}</td>
+                                                <td>
+                                                    <div className="qty-badge-group">
+                                                        <span className="qty-badge total">{asset.totalQuantity}</span>
+                                                        <span className="qty-badge avail">{asset.availableQuantity}</span>
+                                                        <span className="qty-badge assigned">{asset.assignedQuantity}</span>
+                                                    </div>
+                                                </td>
                                             </tr>
                                         ))}
                                     </tbody>
@@ -233,6 +245,18 @@ export default function AdminDashboard() {
                                     required
                                 />
                             </div>
+                            <div className="form-group">
+                                <label htmlFor="asset-quantity">Total Quantity</label>
+                                <input
+                                    id="asset-quantity"
+                                    type="number"
+                                    min="1"
+                                    placeholder="e.g. 20"
+                                    value={newQuantity}
+                                    onChange={(e) => setNewQuantity(e.target.value)}
+                                    required
+                                />
+                            </div>
                             <button className="btn btn-primary" type="submit" disabled={addLoading}>
                                 {addLoading ? 'Creating…' : 'Create Asset'}
                             </button>
@@ -253,6 +277,7 @@ export default function AdminDashboard() {
                                         <tr>
                                             <th>User</th>
                                             <th>Asset</th>
+                                            <th>Qty</th>
                                             <th>Status</th>
                                             <th>Date</th>
                                             <th>Actions</th>
@@ -263,6 +288,7 @@ export default function AdminDashboard() {
                                             <tr key={req._id}>
                                                 <td>{req.user?.name || 'N/A'} <span className="text-muted">({req.user?.email})</span></td>
                                                 <td>{req.asset?.name || 'N/A'}</td>
+                                                <td><span className="badge badge-qty">{req.requestedQuantity}</span></td>
                                                 <td>{statusBadge(req.status)}</td>
                                                 <td>{new Date(req.createdAt).toLocaleDateString()}</td>
                                                 <td>

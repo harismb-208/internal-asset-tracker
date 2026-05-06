@@ -13,10 +13,26 @@ const assetRequestSchema = new mongoose.Schema(
       required: true,
     },
     status: {
-  type: String,
-  enum: ["PENDING", "APPROVED", "REJECTED", "RETURNED"],
-  default: "PENDING",
-},
+      type: String,
+      enum: ["PENDING", "APPROVED", "REJECTED", "RETURNED"],
+      default: "PENDING",
+    },
+    requestedQuantity: {
+      type: Number,
+      required: true,
+      default: 1,
+    },
+    returnedQuantity: {
+      type: Number,
+      default: 0,
+    },
+    remainingAssignedQuantity: {
+      type: Number,
+      default: 0,
+    },
+    assignedDate: {
+      type: Date,
+    },
   },
   { timestamps: true }
 );

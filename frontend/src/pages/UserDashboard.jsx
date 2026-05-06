@@ -6,10 +6,11 @@ export default function UserDashboard() {
     const { logout } = useAuth();
 
     /* ──────────── state ──────────── */
-    const [myAssets, setMyAssets] = useState([]);
     const [myRequests, setMyRequests] = useState([]);
-    const [assetId, setAssetId] = useState('');
+    const [availableAssets, setAvailableAssets] = useState([]);
     const [tab, setTab] = useState('assets');
+    const [reqQtys, setReqQtys] = useState({}); // { assetId: quantity }
+    const [returnQtys, setReturnQtys] = useState({}); // { requestId: quantity }
 
     const [loading, setLoading] = useState(true);
     const [actionLoading, setActionLoading] = useState(null);
@@ -17,12 +18,6 @@ export default function UserDashboard() {
     const [msg, setMsg] = useState({ text: '', type: '' });
 
     /* ──────────── fetch helpers ──────────── */
-    const fetchMyAssets = useCallback(async () => {
-        try {
-            const res = await API.get('/assets/my');
-            setMyAssets(res.data);
-        } catch { /* silent */ }
-    }, []);
 
     const fetchMyRequests = useCallback(async () => {
         try {
@@ -31,32 +26,29 @@ export default function UserDashboard() {
         } catch { /* silent */ }
     }, []);
 
+    const fetchAvailableAssets = useCallback(async () => {
+        try {
+            const res = await API.get('/assets/list');
+            setAvailableAssets(res.data);
+        } catch { /* silent */ }
+    }, []);
+
     const fetchAll = useCallback(async () => {
         setLoading(true);
-        await Promise.all([fetchMyAssets(), fetchMyRequests()]);
+        await Promise.all([fetchMyRequests(), fetchAvailableAssets()]);
         setLoading(false);
-    }, [fetchMyAssets, fetchMyRequests]);
+    }, [fetchMyRequests, fetchAvailableAssets]);
 
     useEffect(() => { fetchAll(); }, [fetchAll]);
 
     /* ──────────── actions ──────────── */
-    const handleRequestAsset = async (e) => {
-        e.preventDefault();
-        const id = assetId.trim();
-        if (!id) return;
-
-        // MongoDB ObjectIds are exactly 24 hex characters
-        if (!/^[a-fA-F0-9]{24}$/.test(id)) {
-            setMsg({ text: 'Invalid Asset ID. It must be a 24-character hex string (e.g. 698aad2920c7a6466f618586). Copy the full ID from the Admin dashboard.', type: 'error' });
-            return;
-        }
-
-        setRequestLoading(true);
+    const handleRequestAsset = async (id) => {
+        const qty = reqQtys[id] || 1;
+        setRequestLoading(id);
         setMsg({ text: '', type: '' });
         try {
-            await API.post('/requests', { assetId: id });
+            await API.post('/requests', { assetId: id, requestedQuantity: parseInt(qty) });
             setMsg({ text: 'Asset requested successfully!', type: 'success' });
-            setAssetId('');
             fetchAll();
         } catch (err) {
             setMsg({ text: err.response?.data?.message || 'Failed to request asset', type: 'error' });
@@ -66,9 +58,10 @@ export default function UserDashboard() {
     };
 
     const handleReturn = async (requestId) => {
+        const qty = returnQtys[requestId] || 1;
         setActionLoading(requestId);
         try {
-            await API.patch(`/requests/return/${requestId}`);
+            await API.patch(`/requests/return/${requestId}`, { returnedQty: parseInt(qty) });
             setMsg({ text: 'Asset returned successfully!', type: 'success' });
             fetchAll();
         } catch (err) {
@@ -144,7 +137,7 @@ export default function UserDashboard() {
                 {tab === 'assets' && (
                     <section className="card">
                         <h2 className="card-title">My Assigned Assets</h2>
-                        {myAssets.length === 0 ? (
+                        {myRequests.filter(r => r.status === 'APPROVED' && r.remainingAssignedQuantity > 0).length === 0 ? (
                             <p className="empty-state">You have no assigned assets.</p>
                         ) : (
                             <div className="table-wrap">
@@ -153,37 +146,43 @@ export default function UserDashboard() {
                                         <tr>
                                             <th>Name</th>
                                             <th>Type</th>
-                                            <th>Status</th>
+                                            <th>Remaining</th>
                                             <th>Action</th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {myAssets.map((asset) => {
-                                            /* find the APPROVED request for this asset so we can return it */
-                                            const approvedReq = myRequests.find(
-                                                (r) => r.asset?._id === asset._id && r.status === 'APPROVED'
-                                            );
-                                            return (
-                                                <tr key={asset._id}>
-                                                    <td>{asset.name}</td>
-                                                    <td>{asset.type}</td>
-                                                    <td>{statusBadge(asset.status)}</td>
+                                        {myRequests
+                                            .filter(r => r.status === 'APPROVED' && r.remainingAssignedQuantity > 0)
+                                            .map((req) => (
+                                                <tr key={req._id}>
+                                                    <td>{req.asset?.name || 'N/A'}</td>
+                                                    <td>{req.asset?.type || '—'}</td>
                                                     <td>
-                                                        {approvedReq ? (
-                                                            <button
-                                                                className="btn btn-warning btn-sm"
-                                                                disabled={actionLoading === approvedReq._id}
-                                                                onClick={() => handleReturn(approvedReq._id)}
-                                                            >
-                                                                {actionLoading === approvedReq._id ? 'Returning…' : 'Return'}
-                                                            </button>
-                                                        ) : (
-                                                            <span className="text-muted">—</span>
-                                                        )}
+                                                        <span className="badge badge-qty">{req.remainingAssignedQuantity}</span>
+                                                    </td>
+                                                    <td>
+                                                        <div className="return-action-group">
+                                                            <div className="qty-input-group">
+                                                                <input 
+                                                                    type="number" 
+                                                                    min="1" 
+                                                                    max={req.remainingAssignedQuantity}
+                                                                    value={returnQtys[req._id] || req.remainingAssignedQuantity}
+                                                                    onChange={(e) => setReturnQtys({...returnQtys, [req._id]: e.target.value})}
+                                                                    className="qty-input-sm"
+                                                                />
+                                                                <button
+                                                                    className="btn btn-warning btn-sm"
+                                                                    disabled={actionLoading === req._id}
+                                                                    onClick={() => handleReturn(req._id)}
+                                                                >
+                                                                    {actionLoading === req._id ? '…' : 'Return'}
+                                                                </button>
+                                                            </div>
+                                                        </div>
                                                     </td>
                                                 </tr>
-                                            );
-                                        })}
+                                            ))}
                                     </tbody>
                                 </table>
                             </div>
@@ -204,6 +203,7 @@ export default function UserDashboard() {
                                         <tr>
                                             <th>Asset</th>
                                             <th>Type</th>
+                                            <th>Qty</th>
                                             <th>Status</th>
                                             <th>Date</th>
                                         </tr>
@@ -213,6 +213,7 @@ export default function UserDashboard() {
                                             <tr key={req._id}>
                                                 <td>{req.asset?.name || 'N/A'}</td>
                                                 <td>{req.asset?.type || '—'}</td>
+                                                <td><span className="badge badge-qty">{req.requestedQuantity}</span></td>
                                                 <td>{statusBadge(req.status)}</td>
                                                 <td>{new Date(req.createdAt).toLocaleDateString()}</td>
                                             </tr>
@@ -227,20 +228,91 @@ export default function UserDashboard() {
                 {/* ─── Request Asset tab ─── */}
                 {tab === 'new' && (
                     <section className="card">
-                        <h2 className="card-title">Request an Asset</h2>
-                        <p className="card-desc">Enter the Asset ID you want to request. Ask your administrator for available Asset IDs.</p>
-                        <form onSubmit={handleRequestAsset} className="inline-form">
-                            <input
-                                type="text"
-                                placeholder="Paste Asset ID here"
-                                value={assetId}
-                                onChange={(e) => setAssetId(e.target.value)}
-                                required
-                            />
-                            <button className="btn btn-primary" type="submit" disabled={requestLoading}>
-                                {requestLoading ? 'Requesting…' : 'Submit Request'}
+                        <div className="card-header-flex">
+                            <div>
+                                <h2 className="card-title">Available Assets</h2>
+                                <p className="card-desc">Select an asset from the list below to submit a request.</p>
+                            </div>
+                            <button className="btn btn-ghost btn-sm" onClick={fetchAvailableAssets}>
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M23 4v6h-6"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+                                </svg>
+                                Refresh
                             </button>
-                        </form>
+                        </div>
+
+                        {availableAssets.length === 0 ? (
+                            <p className="empty-state">No assets found.</p>
+                        ) : (
+                            <div className="table-wrap">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>Asset Name</th>
+                                            <th>Type</th>
+                                            <th>Available Stock</th>
+                                            <th>Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {availableAssets.map((asset) => {
+                                            const isAvailable = asset.status === 'AVAILABLE';
+                                            const hasPendingRequest = myRequests.some(r => r.asset?._id === asset._id && r.status === 'PENDING');
+
+                                            return (
+                                                <tr key={asset._id}>
+                                                    <td>
+                                                        <div className="asset-info-cell">
+                                                            <span className="asset-name-main">{asset.name}</span>
+                                                            <span className="asset-id-sub">{asset._id}</span>
+                                                        </div>
+                                                    </td>
+                                                    <td>{asset.type}</td>
+                                                    <td>
+                                                        <div className="stock-info">
+                                                            <span className={`stock-count ${asset.availableQuantity > 0 ? 'in-stock' : 'out-of-stock'}`}>
+                                                                {asset.availableQuantity} units
+                                                            </span>
+                                                            <span className="stock-label">left</span>
+                                                        </div>
+                                                    </td>
+                                                    <td>
+                                                        <div className="request-action-group">
+                                                            {hasPendingRequest ? (
+                                                                <span className="status-label warning">Request Pending</span>
+                                                            ) : isAvailable ? (
+                                                                <>
+                                                                    <div className="qty-input-group">
+                                                                        <label className="sr-only">Quantity</label>
+                                                                        <input 
+                                                                            type="number" 
+                                                                            min="1" 
+                                                                            max={asset.availableQuantity}
+                                                                            value={reqQtys[asset._id] || 1}
+                                                                            onChange={(e) => setReqQtys({...reqQtys, [asset._id]: e.target.value})}
+                                                                            className="qty-input-sm"
+                                                                        />
+                                                                        <button
+                                                                            className="btn btn-primary btn-sm"
+                                                                            disabled={requestLoading === asset._id || (reqQtys[asset._id] || 1) > asset.availableQuantity}
+                                                                            onClick={() => handleRequestAsset(asset._id)}
+                                                                        >
+                                                                            {requestLoading === asset._id ? '…' : 'Request'}
+                                                                        </button>
+                                                                    </div>
+                                                                </>
+                                                            ) : (
+                                                                <span className="status-label danger">Out of Stock</span>
+                                                            )}
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
                     </section>
                 )}
             </main>

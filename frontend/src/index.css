@@ -750,3 +750,134 @@ tbody tr:hover {
     align-items: stretch;
   }
 }
+
+/* ── Asset Request UI Helpers ── */
+.card-header-flex {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 20px;
+}
+
+.asset-info-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.asset-name-main {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.asset-id-sub {
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+
+.status-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.status-label.success {
+  color: var(--success);
+  background: var(--success-bg);
+}
+
+.status-label.warning {
+  color: var(--warning);
+  background: var(--warning-bg);
+}
+
+.btn-disabled {
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  cursor: not-allowed;
+}
+
+/* ── Quantity & Inventory UI ── */
+.qty-badge-group {
+  display: flex;
+  gap: 8px;
+}
+
+.qty-badge {
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+}
+
+.qty-badge.total { background: rgba(255, 255, 255, 0.06); color: var(--text-secondary); }
+.qty-badge.avail { background: var(--success-bg); color: var(--success); }
+.qty-badge.assigned { background: var(--info-bg); color: var(--info); }
+
+.badge-qty {
+  background: var(--accent-glow);
+  color: var(--accent-hover);
+  border: 1px solid rgba(99, 102, 241, 0.2);
+}
+
+.qty-input-sm {
+  width: 60px;
+  padding: 6px 8px !important;
+  font-size: 0.85rem !important;
+  text-align: center;
+}
+
+.qty-input-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.stock-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.stock-count {
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.stock-count.in-stock { color: var(--success); }
+.stock-count.out-of-stock { color: var(--danger); }
+
+.stock-label {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+.request-action-group, .return-action-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.qty-info {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}

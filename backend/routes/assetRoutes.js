@@ -4,7 +4,9 @@ const router = express.Router();
 const {
   createAsset,
   getAllAssets,
-  getMyAssets, // 👈 ADD THIS
+  getMyAssets,
+  getAvailableAssets,
+  getAllAssetsForUser,
 } = require("../controllers/assetController");
 
 const {
@@ -17,6 +19,20 @@ router.post("/", verifyToken, requireRole("ADMIN"), createAsset);
 router.get("/", verifyToken, requireRole("ADMIN"), getAllAssets);
 
 module.exports = router;
+
+router.get(
+  "/available",
+  verifyToken,
+  requireRole("USER"),
+  getAvailableAssets
+);
+
+router.get(
+  "/list",
+  verifyToken,
+  requireRole("USER"),
+  getAllAssetsForUser
+);
 
 router.get(
   "/my",

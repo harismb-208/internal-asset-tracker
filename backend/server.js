@@ -28,6 +28,27 @@ app.options("*", cors());
 // Middleware
 app.use(express.json());
 
+// MongoDB connection for Serverless Environment
+const connectDB = async () => {
+  if (mongoose.connection.readyState >= 1) {
+    return;
+  }
+  try {
+    await mongoose.connect(process.env.MONGO_URI, {
+      serverSelectionTimeoutMS: 5000,
+    });
+    console.log("MongoDB connected");
+  } catch (err) {
+    console.error("MongoDB connection error:", err);
+  }
+};
+
+// Ensure DB is connected for every request
+app.use(async (req, res, next) => {
+  await connectDB();
+  next();
+});
+
 // Root route
 app.get("/", (req, res) => {
   res.send("Backend API is running");
@@ -37,16 +58,6 @@ app.get("/", (req, res) => {
 app.use("/api/auth", authRoutes);
 app.use("/api/assets", assetRoutes);
 app.use("/api/requests", assetRequestRoutes);
-
-// MongoDB connection
-mongoose
-  .connect(process.env.MONGO_URI)
-  .then(() => {
-    console.log("MongoDB connected");
-  })
-  .catch((err) => {
-    console.error("MongoDB connection error:", err);
-  });
 
 // Global error handler
 app.use((err, req, res, next) => {

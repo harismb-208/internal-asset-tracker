@@ -24,15 +24,21 @@ export default function AdminDashboard() {
     const fetchAssets = useCallback(async () => {
         try {
             const res = await API.get('/assets');
+            console.log("📦 ASSETS RECEIVED:", res.data);
             setAssets(res.data);
-        } catch { /* silent */ }
+        } catch (err) { 
+            console.error("❌ FETCH ASSETS FAILED:", err);
+        }
     }, []);
 
     const fetchRequests = useCallback(async () => {
         try {
             const res = await API.get('/requests');
+            console.log("📦 REQUESTS RECEIVED:", res.data);
             setRequests(res.data);
-        } catch { /* silent */ }
+        } catch (err) { 
+            console.error("❌ FETCH REQUESTS FAILED:", err);
+        }
     }, []);
 
     const fetchAll = useCallback(async () => {

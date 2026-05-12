@@ -9,25 +9,33 @@ dotenv.config();
 
 const app = express();
 
-app.use(cors());
+// CORS configuration
+app.use(
+  cors({
+    origin: process.env.CLIENT_URL || "*",
+    credentials: true,
+  })
+);
+
 app.use(express.json());
 
+// Routes
 const authRoutes = require("./routes/authRoutes");
+
 app.use("/api/requests", assetRequestRoutes);
 app.use("/api/assets", assetRoutes);
-
 app.use("/api/auth", authRoutes);
 
-const PORT = process.env.PORT || 5050;
+// Test route
+app.get("/", (req, res) => {
+  res.send("Backend API is running");
+});
 
-console.log("🔥 PORT FROM ENV =", PORT);
+// MongoDB connection
 mongoose
   .connect(process.env.MONGO_URI)
-  .then(() => {
-    console.log("MongoDB connected");
+  .then(() => console.log("MongoDB connected"))
+  .catch((err) => console.error("MongoDB connection error:", err));
 
-    app.listen(PORT, () => {
-      console.log(`Server running on port ${PORT}`);
-    });
-  })
-  .catch((err) => console.error(err));
+// Export app for Vercel
+module.exports = app;

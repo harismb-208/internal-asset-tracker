@@ -42,12 +42,15 @@ exports.createRequest = async (req, res) => {
 };
 
 exports.getAllRequests = async (req, res) => {
+  console.log("🔍 FETCHING ALL REQUESTS (ADMIN)");
   try {
     const requests = await AssetRequest.find()
       .populate("asset")
       .populate("user", "name email");
+    console.log(`✅ FOUND ${requests.length} REQUESTS`);
     res.json(requests);
   } catch (err) {
+    console.error("❌ ERROR FETCHING REQUESTS:", err.message);
     res.status(500).json({ message: err.message });
   }
 };
@@ -105,6 +108,7 @@ exports.getMyRequests = async (req, res) => {
 };
 exports.returnAsset = async (req, res) => {
   try {
+    const { requestId } = req.params;
     const { returnedQty } = req.body;
 
     if (!returnedQty || returnedQty < 1) {
@@ -115,6 +119,10 @@ exports.returnAsset = async (req, res) => {
 
     if (!request) {
       return res.status(404).json({ message: "Request not found" });
+    }
+
+    if (!request.asset) {
+      return res.status(404).json({ message: "Asset associated with this request was not found" });
     }
 
     // Only the same user can return

@@ -25,8 +25,13 @@ const assetSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ["AVAILABLE", "OUT_OF_STOCK"],
+      enum: ["AVAILABLE", "OUT_OF_STOCK", "ASSIGNED"],
       default: "AVAILABLE",
+    },
+    assignedTo: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
     },
   },
   { timestamps: true }

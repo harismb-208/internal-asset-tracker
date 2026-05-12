@@ -16,10 +16,13 @@ exports.createAsset = async (req, res) => {
 };
 
 exports.getAllAssets = async (req, res) => {
+  console.log("🔍 FETCHING ALL ASSETS (ADMIN)");
   try {
     const assets = await Asset.find().populate("assignedTo", "name email");
+    console.log(`✅ FOUND ${assets.length} ASSETS`);
     res.json(assets);
   } catch (err) {
+    console.error("❌ ERROR FETCHING ASSETS:", err.message);
     res.status(500).json({ message: err.message });
   }
 };

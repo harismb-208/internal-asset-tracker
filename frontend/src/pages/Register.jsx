@@ -17,7 +17,12 @@ export default function Register() {
         setError('');
         setSubmitting(true);
         try {
-            await API.post('/auth/register', { name, email, password, role });
+            await API.post('/api/auth/register', {
+                name,
+                email,
+                password,
+                role,
+            });
             // Auto-login after successful registration
             await login(email, password);
         } catch (err) {

@@ -21,14 +21,14 @@ export default function UserDashboard() {
 
     const fetchMyRequests = useCallback(async () => {
         try {
-            const res = await API.get('/requests/my');
+            const res = await API.get('/api/requests/my');
             setMyRequests(res.data);
         } catch { /* silent */ }
     }, []);
 
     const fetchAvailableAssets = useCallback(async () => {
         try {
-            const res = await API.get('/assets/list');
+            const res = await API.get('/api/assets/list');
             setAvailableAssets(res.data);
         } catch { /* silent */ }
     }, []);
@@ -47,7 +47,7 @@ export default function UserDashboard() {
         setRequestLoading(id);
         setMsg({ text: '', type: '' });
         try {
-            await API.post('/requests', { assetId: id, requestedQuantity: parseInt(qty) });
+            await API.post('/api/requests', { assetId: id, requestedQuantity: parseInt(qty) });
             setMsg({ text: 'Asset requested successfully!', type: 'success' });
             fetchAll();
         } catch (err) {
@@ -61,7 +61,7 @@ export default function UserDashboard() {
         const qty = returnQtys[requestId] || 1;
         setActionLoading(requestId);
         try {
-            await API.patch(`/requests/return/${requestId}`, { returnedQty: parseInt(qty) });
+            await API.patch(`/api/requests/return/${requestId}`, { returnedQty: parseInt(qty) });
             setMsg({ text: 'Asset returned successfully!', type: 'success' });
             fetchAll();
         } catch (err) {

@@ -23,7 +23,7 @@ export default function AdminDashboard() {
     /* ──────────── fetch helpers ──────────── */
     const fetchAssets = useCallback(async () => {
         try {
-            const res = await API.get('/assets');
+            const res = await API.get('/api/assets');
             console.log("📦 ASSETS RECEIVED:", res.data);
             setAssets(res.data);
         } catch (err) { 
@@ -33,7 +33,7 @@ export default function AdminDashboard() {
 
     const fetchRequests = useCallback(async () => {
         try {
-            const res = await API.get('/requests');
+            const res = await API.get('/api/requests');
             console.log("📦 REQUESTS RECEIVED:", res.data);
             setRequests(res.data);
         } catch (err) { 
@@ -56,7 +56,7 @@ export default function AdminDashboard() {
         setAddLoading(true);
         setMsg({ text: '', type: '' });
         try {
-            await API.post('/assets', { 
+            await API.post('/api/assets', { 
                 name: newName.trim(), 
                 type: newType.trim(), 
                 totalQuantity: parseInt(newQuantity) 
@@ -76,7 +76,7 @@ export default function AdminDashboard() {
     const handleStatus = async (requestId, status) => {
         setActionLoading(requestId);
         try {
-            await API.patch(`/requests/${requestId}`, { status });
+            await API.patch(`/api/requests/${requestId}`, { status });
             setMsg({ text: `Request ${status.toLowerCase()} successfully!`, type: 'success' });
             fetchAll();
         } catch (err) {
